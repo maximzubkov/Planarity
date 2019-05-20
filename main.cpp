@@ -35,10 +35,10 @@ std::vector< std::vector<size_t> > get_graph_from_file(std::string dir){
 
 int main(int argc, char * argv[]){
 	auto matrix = get_graph_from_file(argv[1]);
-	Graph graph(matrix.size(), matrix);
+	Graph graph(matrix);
 	std::cout << graph;
 	auto m = graph.getEdges();
-    Graph graph2(matrix.size(), m);
+    Graph graph2(m);
 
 	// for (auto& s : m){
 	// 	std::cout << s.first << " "; 
@@ -54,10 +54,22 @@ int main(int argc, char * argv[]){
 		}
 		std::cout << std::endl;
 	} 
-    graph.DFS();
-	graph2.DFS();
+    // graph.DFS();
+    graph2.Gamma();
     std::vector <std::set <std::pair<int, int> > > d;
     // auto pair = std::set<std::pair<int,int>> {std::make_pair (1,2)};
     // d.push_back(std::set<std::pair<int,int>> (pair));
+    // VertexList v;
+    // // v[2] = Vertex(2);
+    // v.push_back(Vertex(1));
+    // v.push_back(Vertex(5));
+    // v.push_back(Vertex(6));
+    // v.push_back(Vertex(8));
+    // v.push_back(Vertex(9));
+    // // v[2] = Vertex(2);
+    // for (int i = 0; i < 20; i++){
+    //     if (v.check(i))
+    //         std::cout << v[i].getName() << " ";
+    // }   
 	return 0;
 }

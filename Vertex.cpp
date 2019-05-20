@@ -5,15 +5,15 @@ Vertex::Vertex(const size_t name):
 	pi_(-1),
 	time_in_(0),
 	time_out_(0),
-	color_(WHITE),
-	status_(G1)
+	color_(WHITE)//,
+	// status_(G1)
 {}
 
-void Vertex::changeStatus(int status){
-	status_ = status;
-}
+// void Vertex::changeStatus(int status){
+// 	status_ = status;
+// }
 
-void Vertex::setName(size_t name){
+void Vertex::setName(const int name){
 	name_ = name;
 }
 
@@ -53,7 +53,7 @@ size_t Vertex::getTimeOut() const{
 	return time_out_;
 }
 
-size_t Vertex::getName() const{
+int Vertex::getName() const{
 	return name_;
 }
 
@@ -61,6 +61,9 @@ size_t Vertex::getColor() const{
 	return color_;
 }
 
-int Vertex::getStatus() const{
-	return status_;
+bool operator== (const Vertex &u, const Vertex &v){
+    return u.name_ == v.name_;
 }
+// int Vertex::getStatus() const{
+// 	return status_;
+// }

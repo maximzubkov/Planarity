@@ -8,12 +8,12 @@ using namespace std;
 // Будем счиать, что подаваемый на вход граф является неориентированным
 // так как ориентация графа никак не влияет на то, может ли он быть располоен на плоскости или нет
 // поэтому любой приходящий граф будет рассматриваться как неориентированный 
-Graph::Graph(size_t n_vertex, std::vector< std::vector<size_t> >& matrix) : 
-    graph_size_(n_vertex), 
+Graph::Graph(std::vector< std::vector<size_t> >& matrix) : 
+    graph_size_(matrix.size()), 
     graph_matrix_(matrix) 
 {
     // Конструктор класса, преобразующй
-    std::cout << "Graph object being created with max nodes size:" << n_vertex << "\n\n";
+    std::cout << "Graph object being created with max nodes size:" << matrix.size() << "\n\n";
     uint64_t code = 0;
     for (size_t line = 0; line != graph_matrix_.size(); ++line){
         code = 0;
@@ -21,9 +21,7 @@ Graph::Graph(size_t n_vertex, std::vector< std::vector<size_t> >& matrix) :
             code += (static_cast<uint64_t>(graph_matrix_[line][elem]) << (graph_size_ - line - 1));
             if (graph_matrix_[line][elem] == 1){
                 graph_list_[line].push_back(elem);
-                graph_list_[elem].push_back(line);
                 edges_.push_back(std::make_pair(line, elem));
-                edges_.push_back(std::make_pair(elem, line));
             }
         } 
         vertexes_.push_back(Vertex(line));
@@ -31,16 +29,24 @@ Graph::Graph(size_t n_vertex, std::vector< std::vector<size_t> >& matrix) :
     }
 }
 
-Graph::Graph(size_t n_vertex, std::vector< std::pair<size_t, size_t> >& edges):
-    graph_size_(n_vertex), 
-    graph_matrix_(std::vector<std::vector<size_t>>(n_vertex, std::vector<size_t>(n_vertex, 0))),
+Graph::Graph(std::vector<edge_t>& edges):
     edges_(edges)
 {
     // Конструктор класса, преобразующй
-    std::cout << "Graph object being created with max nodes size:" << n_vertex << "\n\n";
-    for (const auto & elem : edges){
-        graph_matrix_[elem.first][elem.second] = 1;
-        graph_matrix_[elem.second][elem.first] = 1;
+    size_t max_vertex_index = 0;
+    for (const auto & edge: edges_){
+        if (edge.first > max_vertex_index)
+            max_vertex_index = edge.first;
+        if (edge.second > max_vertex_index)
+            max_vertex_index = edge.second;
+    }
+    graph_size_ = max_vertex_index + 1;
+    graph_matrix_ = std::vector<std::vector<size_t>>(graph_size_, std::vector<size_t>(graph_size_, 0));
+    std::cout << "Graph object being created with max nodes size:" << graph_size_ << "\n\n";
+    for (const auto & edge : edges_){
+        // std::cout << edge.first << " " << edge.second;
+        graph_matrix_[edge.first][edge.second] = 1;
+        // graph_matrix_[elem.second][elem.first] = 1;
     }
     for (int u = 0; u < graph_matrix_.size(); ++u){
         for (int v = 0; v < graph_matrix_.size(); ++v){
@@ -48,8 +54,39 @@ Graph::Graph(size_t n_vertex, std::vector< std::pair<size_t, size_t> >& edges):
                 graph_list_[u].push_back(v);
         }
     }
-    for (int v = 0; v < n_vertex; v++){
-        vertexes_.push_back(Vertex(v));
+    std:cout << " " << graph_size_ << std::endl;
+    for (const auto & edge: edges_){
+        if (!vertexes_.check(edge.first))
+            vertexes_.push_back(Vertex(edge.first));
+        if (!vertexes_.check(edge.second))
+            vertexes_.push_back(Vertex(edge.second));
+    }
+}
+
+void addEdge(edge_t edge){
+    graph_matrix_[edge.first][edge.second] = 1;
+    edges_.push_back(edge);
+    graph_list_[edge.first].push_back(edge.second);
+    if (!vertexes_.check(edge.first))
+        vertexes_.push_back(Vertex(edge.first));
+    if (!vertexes_.check(edge.second))
+        vertexes_.push_back(Vertex(edge.second));
+}
+
+void Graph::MakeUndirect(){
+    for (int u = 0; u < graph_matrix_.size(); ++u){
+        for (int v = 0; v < graph_matrix_.size(); ++v){
+            if (graph_matrix_[u][v] == 1){
+                graph_list_[v].push_back(u);
+                edges_.push_back(edge_t(v, u));
+            }
+        }
+    }
+    for (int u = 0; u < graph_matrix_.size(); ++u){
+        for (int v = 0; v < graph_matrix_.size(); ++v){
+            if (graph_matrix_[u][v] == 1)
+                 graph_matrix_[v][u] = 1;
+        }
     }
 }
 
@@ -57,81 +94,146 @@ size_t Graph::size() const {
     return graph_size_;
 }
 
-void Graph::GetCycle_(size_t from, size_t to){
-    cycle_.insert(cycle_.begin(), from);
-    if (from == to){
-        return;
-    } else {
-        GetCycle_(vertexes_[from].getPi(), to);
-    }
-    return;
+std::vector<edge_t> Graph::Get_Cycle_(std::vector<edge_t> cycle, size_t from, size_t to){
+    if (from == to)
+        return cycle;
+    else
+        cycle = Get_Cycle_(cycle, vertexes_[from].getPi(), to);
+
+    cycle.insert(cycle.begin(), edge_t(from, vertexes_[from].getPi()));
+    cycle.insert(cycle.begin(), edge_t(vertexes_[from].getPi(), from));
+    return cycle;
 }
 
-size_t Graph::DFS_visit_(size_t v, size_t dfs_timer){
-    // v.setTimeIn(dfs_timer);
-    // v.setGrey();
-    vertexes_[v].setTimeIn(dfs_timer);
+std::vector<edge_t> Graph::Cycle_visit_(size_t v){
+    vertexes_[v].setTimeIn(dfs_timer_);
     vertexes_[v].setGrey();
-    dfs_timer++;
+    dfs_timer_++;
     for (auto & u : graph_list_[v]){
         if (vertexes_[u].getColor() == GRAY && u != v && u != vertexes_[v].getPi()){
-            // vertexes_[u].setPi(v);
-            GetCycle_(v, u);
-            std::cout << "cycle ";
-            for (const auto & elem : cycle_){
-                std::cout << elem;
+            std::vector<edge_t> cycle;
+            cycle.insert(cycle.begin(), edge_t(u, v));
+            cycle.insert(cycle.begin(), edge_t(v, u));
+            cycle = Get_Cycle_(cycle, v, u);
+            std::cout << vertexes_[u].getPi() << std::endl;
+            std::cout << "cycle " << u << " " << v;
+            for (const auto & elem : cycle){
+                std::cout << elem.first << " " << elem.second << "\n";
             }
             std::cout << std::endl;
+            return cycle;
         }
         if (vertexes_[u].getColor() == WHITE && u != v){
             vertexes_[u].setPi(v);
-            dfs_timer = DFS_visit_(u, dfs_timer);
+            return Cycle_visit_(u);
         }
     }
-    vertexes_[v].setTimeOut(dfs_timer);
+    vertexes_[v].setTimeOut(dfs_timer_);
     vertexes_[v].setBlack();
-    dfs_timer++;
-    // v.setTimeOut(dfs_timer);
-    // v.setBlack();
+    dfs_timer_++;
+
     std::cout << vertexes_[v].getName() << " IN" << vertexes_[v].getTimeIn() << " OUT" << vertexes_[v].getTimeOut()<< "\n";
-    return dfs_timer;
+    return std::vector<edge_t>();
 }
 
-void Graph::DFS(){
-    size_t dfs_timer = 0;
+std::vector<edge_t> Graph::getCycle(){
+    dfs_timer_ = 0;
+    std::vector<edge_t> cycle;
     for (int vert = 0; vert < vertexes_.size(); vert++){
         if (vertexes_[vert].getColor() == WHITE){
-            dfs_timer = DFS_visit_(vert, dfs_timer);
-        }
-    }
-}
-
-std::vector <std::set <std::pair<size_t, size_t> > > Graph::SegmentsFind_(){
-    std::vector <std::set <std::pair<size_t, size_t> > > S;
-    for(const auto & v : graph_list_){
-        if (vertexes_[v.first].getStatus() == G2){
-            for(const auto & u : v.second){
-                if (vertexes_[u].getStatus() == G2){
-                    S.push_back(std::set<std::pair<size_t,size_t>> {std::make_pair (u,v.first)});
-                    S.push_back(std::set<std::pair<size_t,size_t>> {std::make_pair (v.first, u)});
-                }
+            std::cout << vert << "\n";
+            cycle = Cycle_visit_(vert);
+            if(cycle.size() != 0){
+                return cycle;
             }
         }
     }
-    for (const auto & v : graph_list_){
-        if (vertexes_[v.first].getStatus() == G1){
-            break;
-        }
-    }
-    return S;
+    return cycle;
 }
 
-std::vector< std::set<int> > Graph::Faces(){
-    std::vector< std::set<int> > res;
-    DFS();
-    for (auto & v: cycle_){
-        vertexes_[v].changeStatus(G2);
+std::vector<edge_t> Graph::Companents_visit_(size_t v, std::vector<edge_t> comp){
+    vertexes_[v].setTimeIn(dfs_timer_);
+    vertexes_[v].setGrey();
+    dfs_timer_++;
+    for (auto & u : graph_list_[v]){
+        if (vertexes_[u].getColor() == WHITE && u != v){
+            vertexes_[u].setPi(v);
+            comp.push_back(edge_t(u,v));
+            comp.push_back(edge_t(v,u));
+            comp = Companents_visit_(u, comp);
+        }
     }
+    vertexes_[v].setTimeOut(dfs_timer_);
+    vertexes_[v].setBlack();
+    dfs_timer_++;
+    std::cout << vertexes_[v].getName() << " IN" << vertexes_[v].getTimeIn() << " OUT" << vertexes_[v].getTimeOut()<< "\n";
+    
+    return comp;
+}
+
+std::vector<Graph> Graph::getCompanents(){
+    dfs_timer_ = 0;
+    std::vector<Graph> companents;
+    std::vector<edge_t> tmp;
+    Graph tmp_gr;
+    for (int vert = 0; vert < vertexes_.size(); vert++){
+        if (vertexes_[vert].getColor() == WHITE){
+            std::cout << "jump" << vert << "\n";
+            tmp = Companents_visit_(vert, tmp);
+            // for (const auto& elem: tmp){
+            //     std::cout << elem.first << " " << elem.second << std::endl;
+            // }
+            tmp_gr = Graph(tmp);
+            companents.push_back(tmp_gr);
+            tmp.clear();
+        }
+    }
+    return companents;
+}
+
+
+
+std::vector< std::set<int> > Graph::Gamma(){
+    std::vector< std::set<int> > res;
+    MakeUndirect();
+    std::cout << *this;
+    std::vector<edge_t> cycle = getCycle();
+    if (cycle.size() == 0){
+        std::cout << "forst" << std::endl;
+        return std::vector< std::set<int> >();
+    }
+
+    Graph G1(cycle);
+    G1.MakeUndirect();
+    std::vector <edge_t> other_edges;
+    for (const auto & edge: edges_){
+        if (std::find(cycle.begin(), cycle.end(), edge) == cycle.end())
+            other_edges.push_back(edge);
+    }
+    Graph G2(other_edges);
+    std::cout << G1 << "\n\n\n";
+    std::cout << G2 << "\n\n\n";
+    auto G1_vertexes = G1.getVertexes();
+    auto G2_edges = G2.getEdges();
+    std::vector <edge_t> tmp;
+    for (const auto & edge: G2_edges){
+        if (G1_vertexes.check(edge.first) && G1_vertexes.check(edge.second)){
+           tmp.clear();
+           tmp.push_back(edge);
+           for(const auto & elem: tmp){
+                std::cout << elem.first << " " << elem.second << "  ";
+           }
+           std::cout << std::endl;
+           segments_.push_back(Graph(tmp)); 
+        }
+    }
+    segments_ = G2.getCompanents();
+    for (const auto & seg: segments_){
+        std::cout << seg;
+    }   
+    // for (auto & v: cycle_){
+    //     vertexes_[v].changeStatus(G2);
+    // }
     // Сформируем множество сегментов, если оно окажется пусто, то 
     // алгоритм завершен, в противном случае:
     //      1. Для каждого сегмента S найдем множество Г(S), то есть грани вмещающие в себя сегмент S
@@ -151,8 +253,12 @@ std::map <size_t, std::vector<size_t> > Graph::getList() const{
     return graph_list_;
 }
 
-std::vector <std::pair<size_t, size_t> > Graph::getEdges() const{
+std::vector <edge_t> Graph::getEdges() const{
     return edges_;
+}
+
+VertexList Graph::getVertexes() const{
+    return vertexes_;
 }
 
 // std::vector <uint64_t> Graph::getBiteCodes() const {
@@ -170,3 +276,23 @@ std::ostream& operator << (std::ostream &ostr, const Graph &graph){
     }
     return ostr;
 }
+
+// std::vector <std::set <std::pair<size_t, size_t> > > Graph::SegmentsFind_(){
+//     std::vector <std::set <std::pair<size_t, size_t> > > S;
+//     for(const auto & v : graph_list_){
+//         if (vertexes_[v.first].getStatus() == G2){
+//             for(const auto & u : v.second){
+//                 if (vertexes_[u].getStatus() == G2){
+//                     S.push_back(std::set<std::pair<size_t,size_t>> {std::make_pair (u,v.first)});
+//                     S.push_back(std::set<std::pair<size_t,size_t>> {std::make_pair (v.first, u)});
+//                 }
+//             }
+//         }
+//     }
+//     for (const auto & v : graph_list_){
+//         if (vertexes_[v.first].getStatus() == G1){
+//             break;
+//         }
+//     }
+//     return S;
+// }
