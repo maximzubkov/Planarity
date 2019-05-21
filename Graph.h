@@ -24,6 +24,8 @@ class Graph{
         void addEdge(edge_t edge);
         // std::vector <uint64_t> getBiteCodes() const;
         friend std::ostream& operator << (std::ostream &ostr, const Graph &graph);
+        friend bool operator== (const Graph &gr1, const Graph &gr2);
+
     private:
         size_t graph_size_;
         size_t dfs_timer_;
@@ -34,8 +36,9 @@ class Graph{
         std::vector <edge_t> edges_;
         std::vector <edge_t> cycle_;
         std::vector <Graph> segments_;
-        std::vector<edge_t> Cycle_visit_(size_t v);
+        std::vector<edge_t> Cycle_visit_(size_t v, std::vector<edge_t> comp);
         std::vector<edge_t> Companents_visit_(size_t v, std::vector<edge_t> comp);
-        std::vector<edge_t>  Get_Cycle_(std::vector<edge_t> cycle, size_t from, size_t to);
+        std::vector<edge_t> Get_Cycle_(std::vector<edge_t> cycle, size_t from, size_t to);
+        bool pred(const edge_t &a, edge_t &b);
 };
 

@@ -21,7 +21,7 @@ Graph::Graph(std::vector< std::vector<size_t> >& matrix) :
             code += (static_cast<uint64_t>(graph_matrix_[line][elem]) << (graph_size_ - line - 1));
             if (graph_matrix_[line][elem] == 1){
                 graph_list_[line].push_back(elem);
-                edges_.push_back(std::make_pair(line, elem));
+                edges_.push_back(edge_t(line, elem));
             }
         } 
         vertexes_.push_back(Vertex(line));
@@ -63,7 +63,7 @@ Graph::Graph(std::vector<edge_t>& edges):
     }
 }
 
-void addEdge(edge_t edge){
+void Graph::addEdge(edge_t edge){
     graph_matrix_[edge.first][edge.second] = 1;
     edges_.push_back(edge);
     graph_list_[edge.first].push_back(edge.second);
@@ -105,17 +105,17 @@ std::vector<edge_t> Graph::Get_Cycle_(std::vector<edge_t> cycle, size_t from, si
     return cycle;
 }
 
-std::vector<edge_t> Graph::Cycle_visit_(size_t v){
+std::vector<edge_t> Graph::Cycle_visit_(size_t v, std::vector<edge_t> cycle){
     vertexes_[v].setTimeIn(dfs_timer_);
     vertexes_[v].setGrey();
+    std::cout << vertexes_[v].getName() << vertexes_[v].getColor() << "\n";
+
     dfs_timer_++;
     for (auto & u : graph_list_[v]){
         if (vertexes_[u].getColor() == GRAY && u != v && u != vertexes_[v].getPi()){
-            std::vector<edge_t> cycle;
             cycle.insert(cycle.begin(), edge_t(u, v));
             cycle.insert(cycle.begin(), edge_t(v, u));
             cycle = Get_Cycle_(cycle, v, u);
-            std::cout << vertexes_[u].getPi() << std::endl;
             std::cout << "cycle " << u << " " << v;
             for (const auto & elem : cycle){
                 std::cout << elem.first << " " << elem.second << "\n";
@@ -125,7 +125,7 @@ std::vector<edge_t> Graph::Cycle_visit_(size_t v){
         }
         if (vertexes_[u].getColor() == WHITE && u != v){
             vertexes_[u].setPi(v);
-            return Cycle_visit_(u);
+            return Cycle_visit_(u, cycle);
         }
     }
     vertexes_[v].setTimeOut(dfs_timer_);
@@ -133,16 +133,16 @@ std::vector<edge_t> Graph::Cycle_visit_(size_t v){
     dfs_timer_++;
 
     std::cout << vertexes_[v].getName() << " IN" << vertexes_[v].getTimeIn() << " OUT" << vertexes_[v].getTimeOut()<< "\n";
-    return std::vector<edge_t>();
+    return cycle;
 }
 
 std::vector<edge_t> Graph::getCycle(){
     dfs_timer_ = 0;
     std::vector<edge_t> cycle;
-    for (int vert = 0; vert < vertexes_.size(); vert++){
+    for (int vert = 0; vert < vertexes_.size(); ++vert){
         if (vertexes_[vert].getColor() == WHITE){
-            std::cout << vert << "\n";
-            cycle = Cycle_visit_(vert);
+            std::cout << " efw"<<vert << "\n";
+            cycle = Cycle_visit_(vert, cycle);
             if(cycle.size() != 0){
                 return cycle;
             }
@@ -205,31 +205,50 @@ std::vector< std::set<int> > Graph::Gamma(){
 
     Graph G1(cycle);
     G1.MakeUndirect();
+
     std::vector <edge_t> other_edges;
     for (const auto & edge: edges_){
-        if (std::find(cycle.begin(), cycle.end(), edge) == cycle.end())
+        if (std::find(cycle.begin(), cycle.end(), edge) == cycle.end()){
             other_edges.push_back(edge);
+            other_edges.push_back(edge_t(edge.second, edge.first));
+        }
+
     }
+
     Graph G2(other_edges);
-    std::cout << G1 << "\n\n\n";
-    std::cout << G2 << "\n\n\n";
+    std::cout << "G2\n\n" << G2;
     auto G1_vertexes = G1.getVertexes();
     auto G2_edges = G2.getEdges();
+    auto all_edges = this->getEdges();
+    segments_ = G2.getCompanents();
+    VertexList seg_vertexes;
+
+    for (auto & seg: segments_){
+        seg_vertexes = seg.getVertexes();
+        for (const auto & edge: all_edges){
+            if ((seg_vertexes.check(edge.first) && G1_vertexes.check(edge.second)) || 
+                (seg_vertexes.check(edge.second) && G1_vertexes.check(edge.first)))
+                seg.addEdge(edge);
+        }
+    }   
+
     std::vector <edge_t> tmp;
     for (const auto & edge: G2_edges){
         if (G1_vertexes.check(edge.first) && G1_vertexes.check(edge.second)){
            tmp.clear();
            tmp.push_back(edge);
+           tmp.push_back(edge_t(edge.second, edge.first));
            for(const auto & elem: tmp){
                 std::cout << elem.first << " " << elem.second << "  ";
            }
            std::cout << std::endl;
-           segments_.push_back(Graph(tmp)); 
+           if (std::find(segments_.begin(), segments_.end(), Graph(tmp)) == segments_.end())
+               segments_.push_back(Graph(tmp)); 
         }
     }
-    segments_ = G2.getCompanents();
-    for (const auto & seg: segments_){
-        std::cout << seg;
+
+    for (auto & seg: segments_){
+        std::cout << "\n" << seg << "\n";
     }   
     // for (auto & v: cycle_){
     //     vertexes_[v].changeStatus(G2);
@@ -275,6 +294,28 @@ std::ostream& operator << (std::ostream &ostr, const Graph &graph){
         ostr << std::endl;
     }
     return ostr;
+}
+
+bool operator== (const Graph &gr1, const Graph &gr2){
+    auto gr1_edges = gr1.getEdges();
+    auto gr2_edges = gr2.getEdges();
+    bool equal_found = false;
+    if (gr1_edges.size() != gr2_edges.size())
+        return false;
+    else {
+        for (const auto elem1: gr1_edges){
+            equal_found = false;
+            for (const auto elem2: gr2_edges){
+                if (elem1 == elem2){
+                    equal_found = true;
+                    break;
+                }
+            }
+            if (!equal_found)
+                return false;
+        }
+        return true;
+    }
 }
 
 // std::vector <std::set <std::pair<size_t, size_t> > > Graph::SegmentsFind_(){
