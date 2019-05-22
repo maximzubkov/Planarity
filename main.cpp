@@ -56,7 +56,22 @@ int main(int argc, char * argv[]){
 	} 
     // graph.DFS();
     graph2.Gamma();
-    std::vector <std::set <std::pair<int, int> > > d;
+    // std::vector <std::set <std::pair<int, int> > > d;
+    // std::vector<int> h;
+    // h.push_back(1);
+    // h.push_back(7);
+    // h.push_back(8);
+    // h.push_back(5);
+    // h.push_back(7);
+    // h.push_back(3);
+    // for(const auto& elem: h){
+    //     std::cout << elem << " ";
+    // }
+    // std::cout << std::endl;
+    // h.erase(std::remove(h.begin(), h.end(), 7), h.end());
+    // for(const auto& elem: h){
+    //     std::cout << elem << " ";
+    // }
     // auto pair = std::set<std::pair<int,int>> {std::make_pair (1,2)};
     // d.push_back(std::set<std::pair<int,int>> (pair));
     // VertexList v;

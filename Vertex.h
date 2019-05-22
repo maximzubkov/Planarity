@@ -62,6 +62,9 @@ public:
 	void push_front(const Vertex& v){
 		vertexes_.insert(vertexes_.begin(), v);
 	}
+	void remove(const Vertex& v){
+		std::remove(vertexes_.begin(), vertexes_.end(), v);
+	}
 	void clear(){
 		vertexes_.clear();
 	}
