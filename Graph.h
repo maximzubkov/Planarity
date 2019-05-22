@@ -21,8 +21,9 @@ class Graph{
         std::vector <edge_t> getCycle();
         std::vector <Graph> getCompanents();
         std::vector <edge_t> getChain(Graph G1);
-        std::vector <std::vector <Vertex>> getFaces();
-        std::vector <std::set <int>> Gamma();
+        std::pair <Graph, Graph> getFaces(Graph cur_face, std::vector<edge_t> chain);
+        std::vector <edge_t> findPath(size_t start_vertex, size_t finish_vertex, std::vector<edge_t> path);
+        void Gamma();
         void addEdge(const edge_t edge);   
         void removeEdge(const edge_t edge);   
         void addEdgeList(const std::vector<edge_t> edges);

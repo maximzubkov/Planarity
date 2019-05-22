@@ -54,10 +54,18 @@ public:
 		exit(0);
 	}
 	bool check(const int v){
-		return std::find(vertexes_.begin(), vertexes_.end(), Vertex(v)) != vertexes_.end();
+		return (std::find(vertexes_.begin(), vertexes_.end(), Vertex(v)) != vertexes_.end());
 	}
 	void push_back(const Vertex& v){
 		vertexes_.push_back(v);
+	}
+	size_t max(){
+		size_t max = 0;
+		for (const auto & elem: vertexes_){
+			if (elem.getName() > max)
+				max = elem.getName();
+		}
+		return max;
 	}
 	void push_front(const Vertex& v){
 		vertexes_.insert(vertexes_.begin(), v);
