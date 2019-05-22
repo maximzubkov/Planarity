@@ -506,20 +506,6 @@ void Graph::Gamma(){
     for (const auto &face: faces_){
         std::cout << face << "\n";
     }
-    // for (const auto & elem: segments_insert_count_){
-    //     std::cout << elem << " ";
-    // }   
-    // for (auto & v: cycle_){
-    //     vertexes_[v].changeStatus(G2);
-    // }
-    // Сформируем множество сегментов, если оно окажется пусто, то 
-    // алгоритм завершен, в противном случае:
-    //      1. Для каждого сегмента S найдем множество Г(S), то есть грани вмещающие в себя сегмент S
-    //         если найдется такой сегмент, что |Г(S)| = 0, то граф планарен
-    //      2. Выберем сегмент с минимальным числом вмещающих граней
-    //      3. Выберем одну из подходящих граней
-    //      4. Выберем цепь между двумя контактными вершинами и уложим ее в выбранной грани. Если теперь
-    //         множество сегментов не пусто, то перейдем к пункту 1.
     return;
 }
 
@@ -538,10 +524,6 @@ std::vector <edge_t> Graph::getEdges() const{
 VertexList Graph::getVertexes() const{
     return vertexes_;
 }
-
-// std::vector <uint64_t> Graph::getBiteCodes() const {
-//     return graph_bit_code_;
-// }
 
 std::ostream& operator<< (std::ostream &ostr, const Graph &graph){
     auto matrix = graph.getMatrix();
